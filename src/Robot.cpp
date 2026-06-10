@@ -46,7 +46,7 @@ bool Robot::esperarConPrioridadPiso(unsigned long duracionMs) {
 void Robot::retrocesoSeguro(unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long retrocesoMinimoMs = 90;
+    const unsigned long retrocesoMinimoMs = 140;
     while (millis() - inicio < duracionMs) {
         retroceder();
 
@@ -58,7 +58,7 @@ void Robot::retrocesoSeguro(unsigned long duracionMs) {
             if (pistaEstableDesde == 0) {
                 pistaEstableDesde = millis();
             }
-            if ((millis() - inicio) > retrocesoMinimoMs && (millis() - pistaEstableDesde) > 25) {
+            if ((millis() - inicio) > retrocesoMinimoMs && (millis() - pistaEstableDesde) > 40) {
                 return;
             }
         } else {
@@ -86,7 +86,7 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
             if (pistaEstableDesde == 0) {
                 pistaEstableDesde = millis();
             }
-            if ((millis() - inicio) > 60 && (millis() - pistaEstableDesde) > 30) {
+            if ((millis() - inicio) > 100 && (millis() - pistaEstableDesde) > 50) {
                 return;
             }
         } else {
@@ -98,7 +98,7 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
 void Robot::giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long giroMinimoMs = 130;
+    const unsigned long giroMinimoMs = 180;
     while (millis() - inicio < duracionMs) {
         bool pisoIzq = false;
         bool pisoDer = false;
@@ -114,7 +114,7 @@ void Robot::giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs) {
             if (pistaEstableDesde == 0) {
                 pistaEstableDesde = millis();
             }
-            if ((millis() - inicio) > giroMinimoMs && (millis() - pistaEstableDesde) > 45) {
+            if ((millis() - inicio) > giroMinimoMs && (millis() - pistaEstableDesde) > 60) {
                 return;
             }
         } else {
@@ -146,38 +146,38 @@ void Robot::detenerse() {
 }
 
 void Robot::ataqueEnemigo() {
-    motores.adelante(Velocidad_maxima_Ataque);
+    motores.adelante(VELOCIDAD_ATAQUE_FRONTAL);
 }
 
 void Robot::moverAdelante() {
-    motores.adelante(Velocidad_movimiento_seguir);
+    motores.adelante(VELOCIDAD_SEGUIR_ENEMIGO);
 }
 
 void Robot::retroceder() {
-    motores.retroceder(Velocidad_estandar);
+    motores.retroceder(VELOCIDAD_ESCAPE_RETROCESO);
 }
 
 void Robot::moverDerecha() {
-    motores.derecha(Velocidad_maxima);
+    motores.derecha(VELOCIDAD_BUSQUEDA_GIRO);
 }
 
 void Robot::moverIzquierda() {
-    motores.izquierda(Velocidad_maxima);
+    motores.izquierda(VELOCIDAD_BUSQUEDA_GIRO);
 }
 
 void Robot::sensoresPiso(bool pisoIzq, bool pisoDer) {
     static bool giroAlternadoDerecha = true;
 
     if (pisoIzq && pisoDer) {
-        retrocesoSeguro(260);
-        giroEscapeSeguro(giroAlternadoDerecha, 190);
+        retrocesoSeguro(300);
+        giroEscapeSeguro(giroAlternadoDerecha, 320);
         giroAlternadoDerecha = !giroAlternadoDerecha;
     } else if (pisoDer) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(false, 330);
+        retrocesoSeguro(360);
+        giroEscapeCompleto(false, 520);
     } else if (pisoIzq) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(true, 330);
+        retrocesoSeguro(360);
+        giroEscapeCompleto(true, 520);
     }
 }
 
@@ -185,14 +185,14 @@ void Robot::sensoresFrontales(bool central, bool derecho, bool izquierdo) {
     // Aquí solo llega si es frontal asimétrico (no central), así que ataca hacia ese lado
       
     if (derecho && !izquierdo) {
-        moverDerecha();
+        motores.derecha(VELOCIDAD_ATAQUE_LATERAL);
         if (esperarConPrioridadPiso(70)) return;
-        motores.adelante(Velocidad_maxima);
+        motores.adelante(VELOCIDAD_ATAQUE_FRONTAL);
         esperarConPrioridadPiso(70);
     } else if (izquierdo && !derecho) {
-        moverIzquierda();
+        motores.izquierda(VELOCIDAD_ATAQUE_LATERAL);
         if (esperarConPrioridadPiso(70)) return;
-        motores.adelante(Velocidad_maxima);
+        motores.adelante(VELOCIDAD_ATAQUE_FRONTAL);
         esperarConPrioridadPiso(70);
     }
 }
@@ -208,11 +208,11 @@ void Robot::sensoresLaterales(bool sensorIzquierdo, bool sensorDerecho) {
     // Verifica piso cada 5ms para abortar si hay borde.
     if (sensorIzquierdo) {
         motores.getIzquierdo().detener();
-        motores.getDerecho().avanzar(Velocidad_maxima_Ataque);
+        motores.getDerecho().avanzar(VELOCIDAD_ATAQUE_LATERAL);
         esperarConPrioridadPiso(120);
     } else if (sensorDerecho) {
         motores.getDerecho().detener();
-        motores.getIzquierdo().avanzar(Velocidad_maxima_Ataque);
+        motores.getIzquierdo().avanzar(VELOCIDAD_ATAQUE_LATERAL);
         esperarConPrioridadPiso(120);
     }
 }
@@ -267,11 +267,11 @@ void Robot::loop() {
 
     if (!bordeDetectado) {
         // Avanza hacia el borde a velocidad reducida
-        motores.adelante(Velocidad_borde);
+        motores.adelante(VELOCIDAD_APROXIMACION_BORDE);
         if (PisoIzq || PisoDer) {
             // Al detectar el borde, retrocede para no salirse
             bordeDetectado = true;
-            retrocesoSeguro(350); // Aumenta el tiempo si es necesario
+            retrocesoSeguro(420); // Más margen para salir realmente del borde
             sensoresPiso(PisoIzq, PisoDer);
         }
         return;
@@ -325,9 +325,27 @@ void Robot::loop() {
 
     const unsigned long ahora = millis();
     const unsigned long tiempoSinContacto = ahora - ultimoContacto;
-    const int margenSeguridadPiso = 35;
+    const int margenSeguridadPiso = 50;
     const bool cercaBordeIzq = valorPisoIzq <= (BLANCO + margenSeguridadPiso);
     const bool cercaBordeDer = valorPisoDer <= (BLANCO + margenSeguridadPiso);
+
+    // Si ya está cerca del borde, corta el ataque y recentra antes de empujar.
+    if (cercaBordeIzq || cercaBordeDer) {
+        motores.retroceder(VELOCIDAD_ESCAPE_RETROCESO);
+        delay(35);
+        if (cercaBordeIzq && !cercaBordeDer) {
+            motores.derecha(VELOCIDAD_ESCAPE_GIRO);
+        } else if (cercaBordeDer && !cercaBordeIzq) {
+            motores.izquierda(VELOCIDAD_ESCAPE_GIRO);
+        } else if (busquedaDerecha) {
+            motores.derecha(VELOCIDAD_ESCAPE_GIRO);
+        } else {
+            motores.izquierda(VELOCIDAD_ESCAPE_GIRO);
+        }
+        faseBusqueda = 0;
+        inicioFase = ahora;
+        return;
+    }
 
     // Si acaba de perder contacto, gira de inmediato para re-encontrar al enemigo.
     // No avanza: si el enemigo está detrás, avanzar lo alejaría.
@@ -356,7 +374,7 @@ void Robot::loop() {
     }
 
     // Duraciones de cada fase del barrido 360° (2 arcos de ~180° con avance entre medias)
-    const unsigned long duraciones[4] = {350, 80, 350, 80};
+    const unsigned long duraciones[4] = {260, 30, 260, 30};
 
     if ((ahora - inicioFase) >= duraciones[faseBusqueda]) {
         inicioFase = ahora;
@@ -389,7 +407,7 @@ void Robot::loop() {
     }
     // Fase 1: avance hacia el centro
     else if (faseBusqueda == 1) {
-        motores.adelante(Velocidad_maxima);
+        motores.adelante(VELOCIDAD_BUSQUEDA_AVANCE);
     }
     // Fase 2: segundo arco ~180° en sentido contrario (completa los 360°)
     else if (faseBusqueda == 2) {
@@ -397,6 +415,6 @@ void Robot::loop() {
     }
     // Fase 3: avance hacia el centro
     else {
-        motores.adelante(Velocidad_maxima);
+        motores.adelante(VELOCIDAD_BUSQUEDA_AVANCE);
     }
 }

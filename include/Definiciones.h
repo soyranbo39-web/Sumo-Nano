@@ -44,14 +44,24 @@ extern bool robot_encendido;
 
 // Parámetros
 #define BLANCO 120
-#define Velocidad_movimiento_seguir 150
-#define Velocidad_estandar 130
-#define Velocidad_normal 120
-#define Velocidad_maxima  200
-#define Velocidad_maxima_Ataque  255
-#define  Velocidad_borde 120
+
+// Velocidades ajustadas para motores de 700 rpm.
+#define VELOCIDAD_ATAQUE_FRONTAL     100
+#define VELOCIDAD_ATAQUE_LATERAL     180
+#define VELOCIDAD_BUSQUEDA_AVANCE    140
+#define VELOCIDAD_BUSQUEDA_GIRO      180
+#define VELOCIDAD_ESCAPE_RETROCESO   200
+#define VELOCIDAD_ESCAPE_GIRO        255
+#define VELOCIDAD_APROXIMACION_BORDE 100
+#define VELOCIDAD_SEGUIR_ENEMIGO     180
+
+// Compatibilidad con nombres anteriores
+#define Velocidad_movimiento_seguir VELOCIDAD_SEGUIR_ENEMIGO
+#define Velocidad_estandar          VELOCIDAD_ESCAPE_RETROCESO
+#define Velocidad_normal            VELOCIDAD_BUSQUEDA_AVANCE
+#define Velocidad_maxima            VELOCIDAD_ATAQUE_FRONTAL
+#define Velocidad_maxima_Ataque     VELOCIDAD_ATAQUE_FRONTAL
+#define Velocidad_borde             VELOCIDAD_APROXIMACION_BORDE
 
 
 #endif // DEFINICIONES_H
-
-//los motores son de 700 rpm quiero que ajustes los movimientos y la deteccion del piso para que nos e salga o no haga cosas extrañas

@@ -92,13 +92,15 @@ void Motores::detener() {
 }
 
 void Motores::derecha(int velocidad) {
+    // Giro tipo pivote: la rueda derecha se queda quieta y la izquierda gira.
     motorIzq.avanzar(velocidad);
-    motorDer.retroceder(velocidad);
-    setLedsMovimiento(true, true);
+    motorDer.detener();
+    setLedsMovimiento(true, false);
 }
 
 void Motores::izquierda(int velocidad) {
-    motorIzq.retroceder(velocidad);
+    // Giro tipo pivote: la rueda izquierda se queda quieta y la derecha gira.
+    motorIzq.detener();
     motorDer.avanzar(velocidad);
     setLedsMovimiento(false, true);
 }
