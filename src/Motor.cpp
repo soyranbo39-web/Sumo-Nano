@@ -44,27 +44,74 @@ void setLedsMovimiento(bool txOn, bool rxOn) {
 } // namespace
 
 Motor::Motor(int a1, int a2, int pwm, bool invertir)
-    : pinA1(a1), pinA2(a2), pinPWM(pwm), invertido(invertir) {}
+    : pinA1(a1), pinA2(a2), pinPWM(pwm), invertido(invertir), pwmActual(0), sentidoActual(0), ultimoPasoRampaMs(0) {}
+
+void Motor::aplicarPWMsuave(int velocidadObjetivo) {
+    velocidadObjetivo = constrain(velocidadObjetivo, 0, 255);
+    const int pasoSubida = 5;
+    const int pasoBajada = 14;
+    const int pwmMinArranque = 58;
+    const int pwmImpulsoInicial = 64;
+    const unsigned long intervaloRampaMs = 5;
+
+    if (millis() - ultimoPasoRampaMs < intervaloRampaMs) {
+        analogWrite(pinPWM, pwmActual);
+        return;
+    }
+    ultimoPasoRampaMs = millis();
+
+    if (velocidadObjetivo > 0 && velocidadObjetivo < pwmMinArranque) {
+        velocidadObjetivo = pwmMinArranque;
+    }
+
+    // Evita micro-paradas: al salir de reposo da un impulso breve controlado.
+    if (pwmActual == 0 && velocidadObjetivo > 0) {
+        pwmActual = min(velocidadObjetivo, pwmImpulsoInicial);
+        analogWrite(pinPWM, pwmActual);
+        return;
+    }
+
+    if (velocidadObjetivo > pwmActual) {
+        pwmActual += pasoSubida;
+        if (pwmActual > velocidadObjetivo) {
+            pwmActual = velocidadObjetivo;
+        }
+    } else if (velocidadObjetivo < pwmActual) {
+        pwmActual -= pasoBajada;
+        if (pwmActual < velocidadObjetivo) {
+            pwmActual = velocidadObjetivo;
+        }
+    }
+
+    analogWrite(pinPWM, pwmActual);
+}
 
 void Motor::avanzar(int velocidad) {
     const uint8_t pin1 = invertido ? HIGH : LOW;
     const uint8_t pin2 = invertido ? LOW : HIGH;
     digitalWrite(pinA1, pin1);
     digitalWrite(pinA2, pin2);
-    analogWrite(pinPWM, velocidad);
+    sentidoActual = 1;
+    aplicarPWMsuave(velocidad);
 }
 
 void Motor::retroceder(int velocidad) {
+    // El retroceso de escape debe ser inmediato, sin rampa.
+    velocidad = constrain(velocidad, 0, 255);
     const uint8_t pin1 = invertido ? LOW : HIGH;
     const uint8_t pin2 = invertido ? HIGH : LOW;
     digitalWrite(pinA1, pin1);
     digitalWrite(pinA2, pin2);
+    sentidoActual = -1;
+    pwmActual = velocidad;
     analogWrite(pinPWM, velocidad);
 }
 
 void Motor::detener() {
     digitalWrite(pinA1, LOW);
     digitalWrite(pinA2, LOW);
+    sentidoActual = 0;
+    pwmActual = 0;
     analogWrite(pinPWM, 0);
 }
 
@@ -92,27 +139,29 @@ void Motores::detener() {
 }
 
 void Motores::derecha(int velocidad) {
-    // Giro tipo pivote: la rueda derecha se queda quieta y la izquierda gira.
+    // Giro con pivote: rueda derecha detenida.
     motorIzq.avanzar(velocidad);
     motorDer.detener();
     setLedsMovimiento(true, false);
 }
 
 void Motores::izquierda(int velocidad) {
-    // Giro tipo pivote: la rueda izquierda se queda quieta y la derecha gira.
+    // Giro con pivote: rueda izquierda detenida.
     motorIzq.detener();
     motorDer.avanzar(velocidad);
     setLedsMovimiento(false, true);
 }
 
 void Motores::curvaDerecha(int velocidad) {
+    const int velocidadInterna = max(45, velocidad / 2);
     motorIzq.avanzar(velocidad);
-    motorDer.detener();
+    motorDer.avanzar(velocidadInterna);
     setLedsMovimiento(true, false);
 }
 
 void Motores::curvaIzquierda(int velocidad) {
-    motorIzq.detener();
+    const int velocidadInterna = max(45, velocidad / 2);
+    motorIzq.avanzar(velocidadInterna);
     motorDer.avanzar(velocidad);
     setLedsMovimiento(false, true);
 }

@@ -17,14 +17,17 @@ enum class Prioridad {
 
 class Robot {
         bool bordeDetectado; // Estado de detección de borde
+    int suavePisoIzq = 240, suavePisoDer = 240; // Valores suavizados (EMA)
+    static constexpr float factorEMA = 0.3f; // Factor de promedio exponencial
     Motores motores;
     SensorPiso sensorPisoIzq, sensorPisoDer;
     SensorEnemigo sensorFrontal, sensorFrontalIzq, sensorFrontalDer, sensorLateralIzq, sensorLateralDer;
     bool leerPiso(bool &pisoIzq, bool &pisoDer);
+    void aplicarEMAsuavizado(int &suaveActual, int valorNuevo);
     bool esperarConPrioridadPiso(unsigned long duracionMs);
     void retrocesoSeguro(unsigned long duracionMs);
     void giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs);
-    void giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs);
+    void giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs, int velocidadCurva);
 public:
     Robot();
     void setup();

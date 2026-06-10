@@ -7,6 +7,10 @@
 class Motor {
     int pinA1, pinA2, pinPWM;
     bool invertido;
+    int pwmActual;
+    int sentidoActual;
+    unsigned long ultimoPasoRampaMs;
+    void aplicarPWMsuave(int velocidadObjetivo);
 public:
     Motor(int a1, int a2, int pwm, bool invertir = false);
     void avanzar(int velocidad);
