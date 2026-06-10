@@ -46,7 +46,7 @@ bool Robot::esperarConPrioridadPiso(unsigned long duracionMs) {
 void Robot::retrocesoSeguro(unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long retrocesoMinimoMs = 90;
+    const unsigned long retrocesoMinimoMs = 40;
     while (millis() - inicio < duracionMs) {
         retroceder();
 
@@ -86,7 +86,7 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
             if (pistaEstableDesde == 0) {
                 pistaEstableDesde = millis();
             }
-            if ((millis() - inicio) > 60 && (millis() - pistaEstableDesde) > 30) {
+            if ((millis() - inicio) > 40 && (millis() - pistaEstableDesde) > 30) {
                 return;
             }
         } else {
@@ -98,7 +98,7 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
 void Robot::giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long giroMinimoMs = 130;
+    const unsigned long giroMinimoMs = 80;
     while (millis() - inicio < duracionMs) {
         bool pisoIzq = false;
         bool pisoDer = false;
@@ -169,15 +169,15 @@ void Robot::sensoresPiso(bool pisoIzq, bool pisoDer) {
     static bool giroAlternadoDerecha = true;
 
     if (pisoIzq && pisoDer) {
-        retrocesoSeguro(260);
-        giroEscapeSeguro(giroAlternadoDerecha, 190);
+        retrocesoSeguro(150);
+        giroEscapeSeguro(giroAlternadoDerecha, 120);
         giroAlternadoDerecha = !giroAlternadoDerecha;
     } else if (pisoDer) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(false, 330);
+        retrocesoSeguro(180);
+        giroEscapeCompleto(false, 180);
     } else if (pisoIzq) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(true, 330);
+        retrocesoSeguro(180);
+        giroEscapeCompleto(true, 180);
     }
 }
 
@@ -209,11 +209,11 @@ void Robot::sensoresLaterales(bool sensorIzquierdo, bool sensorDerecho) {
     if (sensorIzquierdo) {
         motores.getIzquierdo().detener();
         motores.getDerecho().avanzar(Velocidad_maxima_Ataque);
-        esperarConPrioridadPiso(120);
+        esperarConPrioridadPiso(80);
     } else if (sensorDerecho) {
         motores.getDerecho().detener();
         motores.getIzquierdo().avanzar(Velocidad_maxima_Ataque);
-        esperarConPrioridadPiso(120);
+        esperarConPrioridadPiso(80);
     }
 }
 
@@ -271,7 +271,7 @@ void Robot::loop() {
         if (PisoIzq || PisoDer) {
             // Al detectar el borde, retrocede para no salirse
             bordeDetectado = true;
-            retrocesoSeguro(350); // Aumenta el tiempo si es necesario
+            retrocesoSeguro(200); // Reducido para motores de 700 rpm
             sensoresPiso(PisoIzq, PisoDer);
         }
         return;
@@ -356,7 +356,7 @@ void Robot::loop() {
     }
 
     // Duraciones de cada fase del barrido 360° (2 arcos de ~180° con avance entre medias)
-    const unsigned long duraciones[4] = {350, 80, 350, 80};
+    const unsigned long duraciones[4] = {200, 60, 200, 60};
 
     if ((ahora - inicioFase) >= duraciones[faseBusqueda]) {
         inicioFase = ahora;
@@ -400,3 +400,4 @@ void Robot::loop() {
         motores.adelante(Velocidad_maxima);
     }
 }
+
