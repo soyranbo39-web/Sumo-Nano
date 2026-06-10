@@ -46,7 +46,7 @@ bool Robot::esperarConPrioridadPiso(unsigned long duracionMs) {
 void Robot::retrocesoSeguro(unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long retrocesoMinimoMs = 40;
+    const unsigned long retrocesoMinimoMs = 30;
     while (millis() - inicio < duracionMs) {
         retroceder();
 
@@ -86,7 +86,7 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
             if (pistaEstableDesde == 0) {
                 pistaEstableDesde = millis();
             }
-            if ((millis() - inicio) > 40 && (millis() - pistaEstableDesde) > 30) {
+            if ((millis() - inicio) > 30 && (millis() - pistaEstableDesde) > 30) {
                 return;
             }
         } else {
@@ -98,7 +98,7 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
 void Robot::giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long giroMinimoMs = 80;
+    const unsigned long giroMinimoMs = 60;
     while (millis() - inicio < duracionMs) {
         bool pisoIzq = false;
         bool pisoDer = false;
@@ -169,15 +169,15 @@ void Robot::sensoresPiso(bool pisoIzq, bool pisoDer) {
     static bool giroAlternadoDerecha = true;
 
     if (pisoIzq && pisoDer) {
-        retrocesoSeguro(150);
-        giroEscapeSeguro(giroAlternadoDerecha, 120);
+        retrocesoSeguro(100);
+        giroEscapeSeguro(giroAlternadoDerecha, 90);
         giroAlternadoDerecha = !giroAlternadoDerecha;
     } else if (pisoDer) {
-        retrocesoSeguro(180);
-        giroEscapeCompleto(false, 180);
+        retrocesoSeguro(120);
+        giroEscapeCompleto(false, 120);
     } else if (pisoIzq) {
-        retrocesoSeguro(180);
-        giroEscapeCompleto(true, 180);
+        retrocesoSeguro(120);
+        giroEscapeCompleto(true, 120);
     }
 }
 
@@ -271,7 +271,7 @@ void Robot::loop() {
         if (PisoIzq || PisoDer) {
             // Al detectar el borde, retrocede para no salirse
             bordeDetectado = true;
-            retrocesoSeguro(200); // Reducido para motores de 700 rpm
+            retrocesoSeguro(120); // Ajustado para motores de 700 rpm
             sensoresPiso(PisoIzq, PisoDer);
         }
         return;

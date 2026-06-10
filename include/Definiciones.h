@@ -43,13 +43,13 @@ const bool REMOTE_ACTIVE_HIGH        = true;
 extern bool robot_encendido;
 
 // Parámetros (Ajustes para motores de 700 RPM)
-#define BLANCO 150 // Aumentado para detectar el blanco un poco antes
-#define Velocidad_movimiento_seguir 100 // Reducido para mejor control con 700 rpm
-#define Velocidad_estandar 120 // Para retrocesos (rápido pero sin salirse)
-#define Velocidad_normal 100
-#define Velocidad_maxima 130 // Para giros y búsquedas (evita giros descontrolados)
-#define Velocidad_maxima_Ataque 255 // Embestida frontal
-#define Velocidad_borde 80 // Avance cuidadoso hacia el borde
+#define BLANCO 300 // Aumentado para detectar el blanco un poco antes
+#define Velocidad_movimiento_seguir 80 // Reducido para mejor control con 700 rpm
+#define Velocidad_estandar 100 // Para retrocesos (rápido pero sin salirse)
+#define Velocidad_normal 80
+#define Velocidad_maxima 110 // Para giros y búsquedas (evita giros descontrolados)
+#define Velocidad_maxima_Ataque 220 // Embestida frontal
+#define Velocidad_borde 60 // Avance cuidadoso hacia el borde
 
 
 #endif // DEFINICIONES_H
