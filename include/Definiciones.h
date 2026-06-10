@@ -44,11 +44,11 @@ extern bool robot_encendido;
 
 // Parámetros
 #define BLANCO 120
-#define Velocidad_movimiento_seguir 255//150
-#define Velocidad_estandar 255//130
-#define Velocidad_normal 255//120
-#define Velocidad_maxima  255//200
-#define Velocidad_maxima_Ataque  255//220
+#define Velocidad_movimiento_seguir 150
+#define Velocidad_estandar 130
+#define Velocidad_normal 120
+#define Velocidad_maxima  200
+#define Velocidad_maxima_Ataque  255
 #define  Velocidad_borde 120
 
 
