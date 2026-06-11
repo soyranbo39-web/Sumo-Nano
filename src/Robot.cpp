@@ -46,7 +46,7 @@ bool Robot::esperarConPrioridadPiso(unsigned long duracionMs) {
 void Robot::retrocesoSeguro(unsigned long duracionMs) {
     unsigned long inicio = millis();
     unsigned long pistaEstableDesde = 0;
-    const unsigned long retrocesoMinimoMs = 90;
+    const unsigned long retrocesoMinimoMs = 180;
     while (millis() - inicio < duracionMs) {
         retroceder();
 
@@ -168,16 +168,40 @@ void Robot::moverIzquierda() {
 void Robot::sensoresPiso(bool pisoIzq, bool pisoDer) {
     static bool giroAlternadoDerecha = true;
 
-    if (pisoIzq && pisoDer) {
-        retrocesoSeguro(260);
-        giroEscapeSeguro(giroAlternadoDerecha, 190);
-        giroAlternadoDerecha = !giroAlternadoDerecha;
-    } else if (pisoDer) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(false, 330);
-    } else if (pisoIzq) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(true, 330);
+    unsigned long escapeInicio = millis();
+    unsigned long pisoLibreDesde = 0;
+    const unsigned long escapeMaximoMs = 900;
+    const unsigned long pisoLibreMinimoMs = 60;
+
+    while (millis() - escapeInicio < escapeMaximoMs) {
+        if (pisoIzq && pisoDer) {
+            retrocesoSeguro(340);
+            giroEscapeSeguro(giroAlternadoDerecha, 260);
+            giroAlternadoDerecha = !giroAlternadoDerecha;
+        } else if (pisoDer) {
+            retrocesoSeguro(360);
+            giroEscapeCompleto(false, 320);
+        } else if (pisoIzq) {
+            retrocesoSeguro(360);
+            giroEscapeCompleto(true, 320);
+        }
+
+        bool pisoIzqActual = false;
+        bool pisoDerActual = false;
+        const bool sigueEnBorde = leerPiso(pisoIzqActual, pisoDerActual);
+
+        if (!sigueEnBorde) {
+            if (pisoLibreDesde == 0) {
+                pisoLibreDesde = millis();
+            }
+            if (millis() - pisoLibreDesde >= pisoLibreMinimoMs) {
+                return;
+            }
+        } else {
+            pisoLibreDesde = 0;
+            pisoIzq = pisoIzqActual;
+            pisoDer = pisoDerActual;
+        }
     }
 }
 
@@ -204,17 +228,34 @@ void Robot::sensoresLaterales(bool sensorIzquierdo, bool sensorDerecho) {
     leerPiso(pisoIzq, pisoDer);
     if (pisoIzq || pisoDer) return;
 
-    // Posicionamiento rápido: solo una llanta gira y la otra queda detenida.
-    // Verifica piso cada 5ms para abortar si hay borde.
+    // Fase 1: Pivote con una llanta como eje para alinearse
+    // La llanta fija actúa como pivote, la otra gira el robot hacia el enemigo
+    unsigned long inicioPivote = millis();
+    const unsigned long durationPivote = 180;
+    
     if (sensorIzquierdo) {
-        motores.getIzquierdo().detener();
-        motores.getDerecho().avanzar(Velocidad_maxima_Ataque);
-        esperarConPrioridadPiso(120);
+        // Enemigo a la izquierda: pivota con llanta derecha fija
+        while (millis() - inicioPivote < durationPivote) {
+            motores.getIzquierdo().retroceder(Velocidad_maxima_Ataque);
+            motores.getDerecho().avanzar(Velocidad_maxima_Ataque);
+            delay(5);
+        }
     } else if (sensorDerecho) {
-        motores.getDerecho().detener();
-        motores.getIzquierdo().avanzar(Velocidad_maxima_Ataque);
-        esperarConPrioridadPiso(120);
+        // Enemigo a la derecha: pivota con llanta izquierda fija
+        while (millis() - inicioPivote < durationPivote) {
+            motores.getDerecho().retroceder(Velocidad_maxima_Ataque);
+            motores.getIzquierdo().avanzar(Velocidad_maxima_Ataque);
+            delay(5);
+        }
     }
+
+    // Fase 2: Ataque frontal agresivo post-alineamiento
+    // Después del pivote, ataca directo con máxima potencia
+    leerPiso(pisoIzq, pisoDer);
+    if (pisoIzq || pisoDer) return;
+    
+    ataqueEnemigo();
+    esperarConPrioridadPiso(100);
 }
 
 void Robot::loop() {
@@ -309,10 +350,10 @@ void Robot::loop() {
 
     // Prioridad 3 (BAJA): Búsqueda sin enemigo
     // Patrón: barrido de arco ~180° + paso corto, cubre trasero, laterales y frente.
-    //   Fase 0: giro ~180° hacia busquedaDerecha       (~350 ms)
-    //   Fase 1: avance corto hacia el interior          ( ~80 ms)
-    //   Fase 2: giro ~180° en dirección contraria       (~350 ms)
-    //   Fase 3: avance corto hacia el interior          ( ~80 ms)
+    //   Fase 0: giro corto y más lento hacia busquedaDerecha (~240 ms)
+    //   Fase 1: avance de barrido                       (~140 ms)
+    //   Fase 2: giro corto y más lento en dirección contraria (~240 ms)
+    //   Fase 3: avance de barrido                       (~140 ms)
     // Al completar el ciclo alterna la dirección inicial para no repetir el mismo patrón.
     static bool busquedaDerecha = true;
     static uint8_t faseBusqueda = 0;
@@ -325,7 +366,7 @@ void Robot::loop() {
 
     const unsigned long ahora = millis();
     const unsigned long tiempoSinContacto = ahora - ultimoContacto;
-    const int margenSeguridadPiso = 35;
+    const int margenSeguridadPiso = 50;
     const bool cercaBordeIzq = valorPisoIzq <= (BLANCO + margenSeguridadPiso);
     const bool cercaBordeDer = valorPisoDer <= (BLANCO + margenSeguridadPiso);
 
@@ -334,17 +375,17 @@ void Robot::loop() {
     if (tiempoSinContacto < 130) {
         if (cercaBordeIzq || cercaBordeDer) {
             if (cercaBordeIzq && !cercaBordeDer) {
-                moverDerecha();
+                motores.derecha(Velocidad_normal);
             } else if (cercaBordeDer && !cercaBordeIzq) {
-                moverIzquierda();
+                motores.izquierda(Velocidad_normal);
             } else if (busquedaDerecha) {
-                moverDerecha();
+                motores.derecha(Velocidad_normal);
             } else {
-                moverIzquierda();
+                motores.izquierda(Velocidad_normal);
             }
         } else {
             // Gira en lugar de avanzar: cubre el ángulo trasero cuanto antes
-            if (busquedaDerecha) moverDerecha(); else moverIzquierda();
+            if (busquedaDerecha) motores.derecha(Velocidad_normal); else motores.izquierda(Velocidad_normal);
         }
         faseBusqueda = 0;
         inicioFase = ahora;
@@ -370,13 +411,13 @@ void Robot::loop() {
     // Si hay borde cerca durante la búsqueda, re-centrar antes de seguir girando.
     if (cercaBordeIzq || cercaBordeDer) {
         if (cercaBordeIzq && !cercaBordeDer) {
-            moverDerecha();
+            motores.derecha(Velocidad_normal);
         } else if (cercaBordeDer && !cercaBordeIzq) {
-            moverIzquierda();
+            motores.izquierda(Velocidad_normal);
         } else if (busquedaDerecha) {
-            moverDerecha();
+            motores.derecha(Velocidad_normal);
         } else {
-            moverIzquierda();
+            motores.izquierda(Velocidad_normal);
         }
         faseBusqueda = 0;
         inicioFase = ahora;
@@ -385,18 +426,18 @@ void Robot::loop() {
 
     // Fase 0: primer arco ~180°
     if (faseBusqueda == 0) {
-        if (busquedaDerecha) moverDerecha(); else moverIzquierda();
+        if (busquedaDerecha) motores.derecha(Velocidad_normal); else motores.izquierda(Velocidad_normal);
     }
     // Fase 1: avance hacia el centro
     else if (faseBusqueda == 1) {
-        motores.adelante(Velocidad_maxima);
+        motores.adelante(Velocidad_movimiento_seguir);
     }
     // Fase 2: segundo arco ~180° en sentido contrario (completa los 360°)
     else if (faseBusqueda == 2) {
-        if (busquedaDerecha) moverIzquierda(); else moverDerecha();
+        if (busquedaDerecha) motores.izquierda(Velocidad_normal); else motores.derecha(Velocidad_normal);
     }
     // Fase 3: avance hacia el centro
     else {
-        motores.adelante(Velocidad_maxima);
+        motores.adelante(Velocidad_movimiento_seguir);
     }
 }

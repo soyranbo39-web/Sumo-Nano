@@ -43,13 +43,13 @@ const bool REMOTE_ACTIVE_HIGH        = true;
 extern bool robot_encendido;
 
 // Parámetros
-#define BLANCO 120
+#define BLANCO 90
 #define Velocidad_movimiento_seguir 255//150
 #define Velocidad_estandar 255//130
 #define Velocidad_normal 255//120
 #define Velocidad_maxima  255//200
 #define Velocidad_maxima_Ataque  255//220
-#define  Velocidad_borde 120
+#define Velocidad_borde 130
 
 
 #endif // DEFINICIONES_H
