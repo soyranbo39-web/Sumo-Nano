@@ -58,8 +58,15 @@ void Robot::retrocesoSeguro(unsigned long duracionMs) {
             if (pistaEstableDesde == 0) {
                 pistaEstableDesde = millis();
             }
+            // Salida anticipada: fuera del borde y enemigo visible → dejar atacar al loop
             if ((millis() - inicio) > retrocesoMinimoMs && (millis() - pistaEstableDesde) > 25) {
                 return;
+            }
+            if ((millis() - inicio) > retrocesoMinimoMs) {
+                bool enemigoVisible = sensorFrontal.detectar() || sensorFrontalIzq.detectar() ||
+                                     sensorFrontalDer.detectar() || sensorLateralIzq.detectar() ||
+                                     sensorLateralDer.detectar();
+                if (enemigoVisible) return;
             }
         } else {
             pistaEstableDesde = 0;
@@ -89,6 +96,10 @@ void Robot::giroEscapeSeguro(bool haciaDerecha, unsigned long duracionMs) {
             if ((millis() - inicio) > 60 && (millis() - pistaEstableDesde) > 30) {
                 return;
             }
+            // Salida anticipada: enemigo frontal visible durante el giro → atacar
+            if ((millis() - inicio) > 60) {
+                if (sensorFrontal.detectar() || (sensorFrontalIzq.detectar() && sensorFrontalDer.detectar())) return;
+            }
         } else {
             pistaEstableDesde = 0;
         }
@@ -116,6 +127,12 @@ void Robot::giroEscapeCompleto(bool haciaDerecha, unsigned long duracionMs) {
             }
             if ((millis() - inicio) > giroMinimoMs && (millis() - pistaEstableDesde) > 45) {
                 return;
+            }
+            // Salida anticipada: enemigo frontal o lateral visible → dejar atacar al loop
+            if ((millis() - inicio) > giroMinimoMs) {
+                bool enemigoFrontal = sensorFrontal.detectar() || sensorFrontalIzq.detectar() || sensorFrontalDer.detectar();
+                bool enemigoLateral = sensorLateralIzq.detectar() || sensorLateralDer.detectar();
+                if (enemigoFrontal || enemigoLateral) return;
             }
         } else {
             pistaEstableDesde = 0;
@@ -168,16 +185,21 @@ void Robot::moverIzquierda() {
 void Robot::sensoresPiso(bool pisoIzq, bool pisoDer) {
     static bool giroAlternadoDerecha = true;
 
+    auto enemigoDetectadoAhora = [&]() {
+        return sensorFrontal.detectar() || sensorFrontalIzq.detectar() || sensorFrontalDer.detectar() ||
+               sensorLateralIzq.detectar() || sensorLateralDer.detectar();
+    };
+
     if (pisoIzq && pisoDer) {
-        retrocesoSeguro(260);
-        giroEscapeSeguro(giroAlternadoDerecha, 190);
+        retrocesoSeguro(340);
+        if (!enemigoDetectadoAhora()) giroEscapeCompleto(giroAlternadoDerecha, 320);
         giroAlternadoDerecha = !giroAlternadoDerecha;
     } else if (pisoDer) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(false, 330);
+        retrocesoSeguro(380);
+        if (!enemigoDetectadoAhora()) giroEscapeCompleto(false, 420);
     } else if (pisoIzq) {
-        retrocesoSeguro(300);
-        giroEscapeCompleto(true, 330);
+        retrocesoSeguro(380);
+        if (!enemigoDetectadoAhora()) giroEscapeCompleto(true, 420);
     }
 }
 
@@ -325,7 +347,7 @@ void Robot::loop() {
 
     const unsigned long ahora = millis();
     const unsigned long tiempoSinContacto = ahora - ultimoContacto;
-    const int margenSeguridadPiso = 35;
+    const int margenSeguridadPiso = 65;
     const bool cercaBordeIzq = valorPisoIzq <= (BLANCO + margenSeguridadPiso);
     const bool cercaBordeDer = valorPisoDer <= (BLANCO + margenSeguridadPiso);
 
